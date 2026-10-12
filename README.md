@@ -1,5 +1,33 @@
 # Stats
 
+## Combined dropdown with pinned readings
+
+This fork adds **Keep visible in menu bar** to each module's **Widgets** settings.
+Enable **Combined modules** and **Show icon instead of widgets** in Settings for
+one Stats icon that opens the combined dropdown. Then enable **Keep visible in
+menu bar** for the modules whose readings should remain beside that icon.
+Clicking a pinned reading opens its usual module detail panel. The combined
+dropdown still includes every enabled module, including pinned modules.
+
+Pins are saved per module and default to off. They take effect only while
+Combined modules is enabled; turning it off restores the normal individual
+widgets. Each pinned module still respects its existing **Merge widgets** setting.
+When every module is pinned, the combined item keeps an icon so the dropdown
+remains accessible even with **Show icon instead of widgets** turned off.
+
+To build locally with Xcode:
+
+```sh
+xcodebuild -scheme Stats -destination 'platform=macOS,arch=arm64' \
+  -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+```
+
+The app is written to `build/Build/Products/Release/Stats.app`. Locally built
+copies need signing before use. Set **Check for updates** to **Never** in the
+fork so the upstream updater does not replace the customized app. This fork
+retains the upstream bundle identifier and settings; keep a backup of your
+original app before installing it.
+
 <a href="https://github.com/exelban/stats/releases"><p align="center"><img src="https://github.com/exelban/stats/raw/master/Stats/Supporting%20Files/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="120"></p></a>
 
 [![Stats](https://cdn.mac-stats.com/assets/images/menus.png)](https://github.com/exelban/stats/releases)
