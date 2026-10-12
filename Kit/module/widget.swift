@@ -390,7 +390,11 @@ public class MenuBar {
     private var queue: DispatchQueue
     
     private var combinedModules: Bool {
-        Store.shared.bool(key: "CombinedModules", defaultValue: false)
+        Store.shared.bool(key: "CombinedModules", defaultValue: false) && !self.keepInMenuBar
+    }
+
+    public var keepInMenuBar: Bool {
+        Store.shared.bool(key: "\(self.moduleName)_keepInMenuBar", defaultValue: false)
     }
     
     public var view: MenuBarView = MenuBarView()

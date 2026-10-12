@@ -33,6 +33,10 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
     private var activeModules: [Module] {
         modules.filter({ $0.enabled }).sorted(by: { $0.combinedPosition < $1.combinedPosition })
     }
+
+    private var visibleModules: [Module] {
+        self.activeModules.filter({ !$0.menuBar.keepInMenuBar && !$0.menuBar.activeWidgets.isEmpty })
+    }
     
     private var combinedModulesPopup: Bool {
         get { Store.shared.bool(key: "CombinedModules_popup", defaultValue: true) }
@@ -96,14 +100,14 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
         guard self.status, self.menuBarItem != nil else { return }
         self.view.subviews.forEach({ $0.removeFromSuperview() })
         
-        if self.iconOnly {
+        if self.iconOnly || self.visibleModules.isEmpty {
             self.view.addSubview(AppIcon())
             self.view.setFrameSize(NSSize(width: AppIcon.size.width, height: self.view.frame.height))
             self.menuBarItem?.length = AppIcon.size.width
             return
         }
         
-        let visibleModules = self.activeModules.filter({ !$0.menuBar.activeWidgets.isEmpty })
+        let visibleModules = self.visibleModules
         var w: CGFloat = 0
         visibleModules.enumerated().forEach { (i, m) in
             if i != 0 {
@@ -125,7 +129,7 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
     private func visibilityCallback(_ state: Bool) {}
     
     @objc private func handleClick() {
-        if self.iconOnly || self.combinedModulesPopup {
+        if self.iconOnly || self.combinedModulesPopup || self.visibleModules.isEmpty {
             self.togglePopup()
         } else {
             self.openModulePopup()
@@ -135,7 +139,7 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
     private func openModulePopup() {
         guard let window = self.menuBarItem?.button?.window else { return }
         let location = self.view.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
-        let visibleModules = self.activeModules.filter({ !$0.menuBar.activeWidgets.isEmpty })
+        let visibleModules = self.visibleModules
         guard let module = visibleModules.last(where: { $0.menuBar.view.frame.minX <= location.x }) ?? visibleModules.first else { return }
         
         var userInfo: [String: Any] = [

@@ -53,13 +53,18 @@ open class Window: NSStackView {
     
     private var enableControl: NSControl?
     private var oneViewBtn: NSSwitch?
+    private var keepInMenuBarBtn: NSSwitch?
     
     private let noWidgetsView: EmptyView = EmptyView(msg: localizedString("No available widgets to configure"))
     private let noPopupSettingsView: EmptyView = EmptyView(msg: localizedString("No options to configure for the popup in this module"))
     private let noNotificationsView: EmptyView = EmptyView(msg: localizedString("No notifications available in this module"))
     
     private var globalOneView: Bool {
-        Store.shared.bool(key: "OneView", defaultValue: false)
+        Store.shared.bool(key: "CombinedModules", defaultValue: false) && !self.keepInMenuBar
+    }
+    private var keepInMenuBar: Bool {
+        get { Store.shared.bool(key: "\(self.config.name)_keepInMenuBar", defaultValue: false) }
+        set { Store.shared.set(key: "\(self.config.name)_keepInMenuBar", value: newValue) }
     }
     private var oneViewState: Bool {
         get { Store.shared.bool(key: "\(self.config.name)_oneView", defaultValue: false) }
@@ -272,6 +277,16 @@ open class Window: NSStackView {
     private func loadWidgetSettings() {
         self.widgetSettingsContainer?.subviews.forEach{ $0.removeFromSuperview() }
         let list = self.widgets.filter({ $0.isActive && $0.type != .label })
+
+        let keepInMenuBarBtn = switchView(
+            action: #selector(self.toggleKeepInMenuBar),
+            state: self.keepInMenuBar
+        )
+        keepInMenuBarBtn.isEnabled = Store.shared.bool(key: "CombinedModules", defaultValue: false)
+        self.keepInMenuBarBtn = keepInMenuBarBtn
+        self.widgetSettingsContainer?.addArrangedSubview(PreferencesSection([
+            PreferencesRow(localizedString("Keep visible in menu bar"), component: keepInMenuBarBtn)
+        ]))
         
         guard !list.isEmpty else {
             self.widgetSettingsContainer?.addArrangedSubview(self.noWidgetsView)
@@ -284,6 +299,7 @@ open class Window: NSStackView {
                 state: self.oneViewState
             )
             self.oneViewBtn = btn
+            btn.isEnabled = !self.globalOneView
             self.widgetSettingsContainer?.addArrangedSubview(PreferencesSection([
                 PreferencesRow(localizedString("Merge widgets"), component: btn)
             ]))
@@ -330,6 +346,19 @@ open class Window: NSStackView {
     
     @objc private func listenForOneView(_ notification: Notification) {
         guard notification.userInfo?["module"] == nil else { return }
+        self.updateMenuBarControls()
+    }
+
+    @objc private func toggleKeepInMenuBar(_ sender: NSControl) {
+        self.keepInMenuBar = controlState(sender)
+        self.updateMenuBarControls()
+        NotificationCenter.default.post(name: .toggleOneView, object: nil, userInfo: ["module": self.config.name])
+        NotificationCenter.default.post(name: .moduleRearrange, object: nil)
+    }
+
+    private func updateMenuBarControls() {
+        self.keepInMenuBarBtn?.isEnabled = Store.shared.bool(key: "CombinedModules", defaultValue: false)
+        self.keepInMenuBarBtn?.state = self.keepInMenuBar ? .on : .off
         self.oneViewBtn?.isEnabled = !self.globalOneView
         if !self.globalOneView {
             self.oneViewBtn?.state = self.oneViewState ? .on : .off
